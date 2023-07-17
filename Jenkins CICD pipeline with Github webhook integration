@@ -1,0 +1,109 @@
+ Jenkins CI/CD pipeline with GitHub webhook integration for Deploying Docker application on EC2 instances using the declarative pipeline.
+
+Follow the steps:
+1.     First of all, go to AWS portal, and create a new instance. As,
+·       Name: jenkins-server
+·       AMI: ubuntu.
+·       Instance type: t2.micro (free tier).
+·       Key pair login: Create > docker.pem.
+·       Allow HTTP.
+·       Allow HTTPS.
+(Download the .pem file.)
+Click on Launch Instance
+
+
+2.     Now, connect to the EC2 instance that you have created. Copy the SSH from server
+
+3.     Go to the download folder, where the .pem file is placed and open the terminal in the same location, and paste the SSH.
+
+4.     In the machine, run the command
+“ssh-keygen”
+This will generate public and private keys in the machine.
+Id_rsa – Private Key.
+Id_rsa.pub – Public Key
+
+5.     Now we will install Jenkins on the machine, by following this link  
+https://www.jenkins.io/doc/book/installing/linux/
+This will automatically install java with Jenkins.
+
+6.     Install Docker as well to the machine by running,
+“Sudo apt-install docker.io”
+
+7.     Now check if it got installed by running “jenkins --version” and “docker --version”
+ **should show version if not, did not install correctly***
+
+
+8.     Now, we will allow ports 8080 and 8001 for this machine from a security group. We can find the security group in the VM description. Now, here we need to allow “Inbound Rule” 
+
+9.     Now, Copy the Public Ip of the machine and paste it to the browser to access the Jenkins portal.
+        ** this can be found in the details section of the instance**
+
+10.  We need an Administrator Password to unlock this. For that, go to the provided path here : “cat /var/lib/Jenkins/secrets/initialAdminPassword” and paste it into the "Administrator Password" column. 
+
+
+11.  Now Click on, “Install Suggested Plugins”
+
+13.  Now, Jenkins will ask us to create the First Admin User. Add the fields accordingly.
+
+14.  Now, we will create a CI/CD pipeline, which will fetch the code from GitHub. 
+
+15.  From Jenkins Dashboard, Click on “New Item”
+
+16.  Now, Add name as
+Name: todo-app or whatever you please
+Project: Freestyle project
+Click “Ok”.
+
+17.  Here, we need to fill up the description. ( I put this is todo-app you can do whatever you please)
+
+18.  In Source Code Management, select Git and Add Repository URL and Credentials.
+(If there is not any added credential, we need to add)
+
+19.  In Build Step, select Execute Shell and write following command to build docker image and from Docker image we will create a container.
+
+    *docker build -t todo-django-app
+    *docker run -p 8001:80001 -d togo-django-app
+
+
+20.  Now, Click on build Now. And the build will be started, in the build history.
+
+21. In the Console Output tab verify build was a success.
+
+22.  After getting success, In the browser, search for
+<public_ip_of_ec2:8001>
+
+Now, our goal is,
+·       Whenever the developer commits their code in GitHub, after every commit, it should reflect in the live web app.
+·       For that, we will use “GitScm polling”.
+·       Every time, a developer made a commit, a trigger will run automatically, which will rebuild the image and run a container on your behalf as a part of automation that will run the pipeline automatically.
+
+
+23.  Now, configure the project again, and add
+Build Trigger: GitHub hook trigger for GitScm polling.
+Description: GitHub webhook integration
+
+24.  We need to install the “Git Integration” plugin from Manage Jenkins, by following the path,
+(Manage Jenkins > Manage Plugins > Git Integration).
+
+25.  Now, Goto GitHub > Settings > SSH and GPG Keys > New SSH Key.
+Add details as
+Title: "your email"
+Key type: <public_key>
+
+26.  To get the Public key, open the “id_rsa.pub” file and copy the content. (Public Key)
+
+27.  Now, we need to go to GitHub and create a new SSH and GPG Key.
+GitHub > Repo “react-django-demo-app” > Settings > Webhooks.
+
+28.  Add the following details,
+Payload URL: http://<public_ip_of_ec2>:8080/github-webhook/
+Content Type: application/json
+Which event would you like to trigger this webhook?
+**  Just the push event.
+Active: True
+Click on “Add Webhook”.
+
+29.  Now, Save the configured project.
+
+
+
